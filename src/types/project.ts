@@ -1,4 +1,5 @@
 import type { UserResponse } from './user'
+import type { ProjectMemberType } from './permission'
 
 export interface ProjectResponse {
   id: string
@@ -14,6 +15,7 @@ export interface ProjectResponse {
   isPublic: boolean
   createdAt: string
   updatedAt: string
+  currentUserMemberType?: ProjectMemberType
 }
 
 export interface ProjectInvitationResponse {

@@ -53,6 +53,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/workspace/invitations',
+      name: 'workspace-invitations',
+      component: () => import('../views/WorkspaceInvitationsView.vue'),
+      meta: {
+        requiresSidebar: true,
+        requiresAuth: true,
+      },
+    },
+    {
       path: '/workspace/projects',
       name: 'workspace-projects',
       component: () => import('../views/WorkspaceProjectsView.vue'),

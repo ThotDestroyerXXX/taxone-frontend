@@ -5,7 +5,7 @@
         <h1 class="text-3xl font-bold">Projects</h1>
         <p class="text-muted-foreground">Manage workspace projects</p>
       </div>
-      <Button @click="showCreateDialog = true">
+      <Button v-if="canCreateProject" @click="showCreateDialog = true">
         <Plus class="mr-2 h-4 w-4" />
         Create Project
       </Button>
@@ -54,21 +54,15 @@
         </CardHeader>
         <CardContent>
           <div class="flex gap-2 flex-wrap items-center text-sm">
-            <span
-              class="inline-flex items-center w-fit rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset"
-              :class="getStatusColor(project.status)"
-            >
+            <Badge variant="outline" :class="getStatusColor(project.status)">
               {{ project.status }}
-            </span>
-            <span
-              class="px-2 py-1 rounded text-xs font-medium"
-              :class="getPriorityClass(project.priority)"
-            >
+            </Badge>
+            <Badge :class="getPriorityClass(project.priority)">
               {{ project.priority }}
-            </span>
-            <span class="text-xs text-muted-foreground">
+            </Badge>
+            <Badge variant="secondary" class="text-xs">
               {{ project.isPublic ? 'Public' : 'Private' }}
-            </span>
+            </Badge>
           </div>
           <div class="mt-3 flex flex-row gap-4 justify-between items-center">
             <div class="space-y-2 text-xs text-muted-foreground">
@@ -129,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -137,6 +131,7 @@ import { workspaceApi } from '@/api/workspace'
 import { CreateProjectForm } from '@/components/workspace'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Sheet,
@@ -155,9 +150,11 @@ import {
 } from '@/components/ui/empty'
 import { Plus, FolderKanban, Calendar, User } from 'lucide-vue-next'
 import type { ProjectResponse } from '@/types/project'
+import { useWorkspacePermissions } from '@/composables/useWorkspacePermissions'
 
 const router = useRouter()
 const workspaceStore = useWorkspaceStore()
+const { canCreateProject } = useWorkspacePermissions()
 const workspace = computed(() => workspaceStore.activeWorkspace)
 
 const projects = ref<ProjectResponse[]>([])
@@ -166,24 +163,24 @@ const showCreateDialog = ref(false)
 
 const getPriorityClass = (priority: string) => {
   const classes = {
-    LOW: 'bg-blue-100 text-blue-800',
-    MEDIUM: 'bg-yellow-100 text-yellow-800',
-    HIGH: 'bg-orange-100 text-orange-800',
-    CRITICAL: 'bg-red-100 text-red-800',
+    LOW: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
+    MEDIUM: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
+    HIGH: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
+    CRITICAL: 'bg-destructive/10 text-destructive dark:bg-destructive/20',
   }
-  return classes[priority as keyof typeof classes] || 'bg-gray-100 text-gray-800'
+  return classes[priority as keyof typeof classes] || 'bg-secondary text-secondary-foreground'
 }
 
 const getStatusColor = (status: string) => {
   switch (status?.toLowerCase()) {
     case 'active':
-      return 'bg-green-50 text-green-700 ring-green-600/20'
+      return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-400/20'
     case 'archived':
-      return 'bg-gray-50 text-gray-700 ring-gray-600/20'
+      return 'bg-muted text-muted-foreground ring-border'
     case 'draft':
-      return 'bg-yellow-50 text-yellow-700 ring-yellow-600/20'
+      return 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-400/20'
     default:
-      return 'bg-blue-50 text-blue-700 ring-blue-600/20'
+      return 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-400/20'
   }
 }
 
@@ -241,4 +238,16 @@ onMounted(async () => {
     await loadProjects()
   }
 })
+
+// Watch for workspace changes and reload projects
+watch(
+  () => workspaceStore.activeWorkspaceId,
+  async (newWorkspaceId, oldWorkspaceId) => {
+    if (newWorkspaceId && newWorkspaceId !== oldWorkspaceId) {
+      await loadProjects()
+    } else if (!newWorkspaceId) {
+      projects.value = []
+    }
+  },
+)
 </script>

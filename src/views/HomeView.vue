@@ -6,6 +6,7 @@ import { useProjectStore } from '@/stores/project'
 import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Empty,
@@ -16,11 +17,13 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { FolderKanban, Building2, Calendar, User } from 'lucide-vue-next'
+import { useWorkspacePermissions } from '@/composables/useWorkspacePermissions'
 
 const router = useRouter()
 const workspaceStore = useWorkspaceStore()
 const projectStore = useProjectStore()
 const authStore = useAuthStore()
+const { canCreateProject } = useWorkspacePermissions()
 
 const hasWorkspace = computed(() => workspaceStore.hasActiveWorkspace)
 
@@ -89,24 +92,24 @@ const handleViewProject = (projectId: string) => {
 const getStatusColor = (status: string) => {
   switch (status?.toLowerCase()) {
     case 'active':
-      return 'bg-green-50 text-green-700 ring-green-600/20'
+      return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-400/20'
     case 'archived':
-      return 'bg-gray-50 text-gray-700 ring-gray-600/20'
+      return 'bg-muted text-muted-foreground ring-border'
     case 'draft':
-      return 'bg-yellow-50 text-yellow-700 ring-yellow-600/20'
+      return 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-400/20'
     default:
-      return 'bg-blue-50 text-blue-700 ring-blue-600/20'
+      return 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-400/20'
   }
 }
 
 const getPriorityClass = (priority: string) => {
   const classes = {
-    LOW: 'bg-blue-100 text-blue-800',
-    MEDIUM: 'bg-yellow-100 text-yellow-800',
-    HIGH: 'bg-orange-100 text-orange-800',
-    CRITICAL: 'bg-red-100 text-red-800',
+    LOW: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
+    MEDIUM: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
+    HIGH: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
+    CRITICAL: 'bg-destructive/10 text-destructive dark:bg-destructive/20',
   }
-  return classes[priority as keyof typeof classes] || 'bg-gray-100 text-gray-800'
+  return classes[priority as keyof typeof classes] || 'bg-secondary text-secondary-foreground'
 }
 
 const formatDate = (dateString: string) => {
@@ -232,7 +235,7 @@ const formatDate = (dateString: string) => {
           <EmptyDescription>Get started by creating your first project</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Button>Create Project</Button>
+          <Button v-if="canCreateProject">Create Project</Button>
         </EmptyContent>
       </Empty>
 
@@ -267,21 +270,15 @@ const formatDate = (dateString: string) => {
           </CardHeader>
           <CardContent>
             <div class="flex gap-2 flex-wrap items-center text-sm">
-              <span
-                class="inline-flex items-center w-fit rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset"
-                :class="getStatusColor(project.status)"
-              >
+              <Badge variant="outline" :class="getStatusColor(project.status)">
                 {{ project.status }}
-              </span>
-              <span
-                class="px-2 py-1 rounded text-xs font-medium"
-                :class="getPriorityClass(project.priority)"
-              >
+              </Badge>
+              <Badge :class="getPriorityClass(project.priority)">
                 {{ project.priority }}
-              </span>
-              <span class="text-xs text-muted-foreground">
+              </Badge>
+              <Badge variant="secondary" class="text-xs">
                 {{ project.isPublic ? 'Public' : 'Private' }}
-              </span>
+              </Badge>
             </div>
             <div class="mt-3 flex flex-row gap-4 justify-between items-center">
               <div class="space-y-2 text-xs text-muted-foreground">

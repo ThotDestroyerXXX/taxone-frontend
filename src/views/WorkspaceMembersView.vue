@@ -2,76 +2,40 @@
   <div class="container mx-auto py-6 space-y-6">
     <div class="flex justify-between items-start">
       <div class="space-y-2">
-        <h1 class="text-3xl font-bold">Team Members</h1>
-        <p class="text-muted-foreground">Manage workspace members and invitations</p>
+        <h1 class="text-3xl font-bold">Team Members ({{ members.length }})</h1>
+        <p class="text-muted-foreground">Manage workspace members and their roles</p>
       </div>
-      <Button @click="showInviteDialog = true">
+      <Button v-if="canInviteMember" @click="showInviteDialog = true">
         <UserPlus class="mr-2 h-4 w-4" />
         Invite Member
       </Button>
     </div>
 
     <!-- Members List -->
-    <Card>
-      <CardHeader>
-        <CardTitle>Members ({{ members.length }})</CardTitle>
-        <CardDescription>People who have access to this workspace</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div v-if="loadingMembers" class="space-y-3">
-          <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
-        </div>
+    <div v-if="loadingMembers" class="space-y-3">
+      <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
+    </div>
 
-        <MembersDataTable
-          v-else-if="members.length > 0"
-          :members="members"
-          @edit="editMember"
-          @remove="removeMember"
-        />
+    <MembersDataTable
+      v-else-if="members.length > 0"
+      :members="members"
+      :can-edit="canUpdateMember"
+      :can-remove="canDeleteMember"
+      @edit="editMember"
+      @remove="removeMember"
+    />
 
-        <Empty v-else>
-          <EmptyContent>
-            <EmptyMedia>
-              <Users class="h-12 w-12" />
-            </EmptyMedia>
-            <EmptyHeader>
-              <EmptyTitle>No Members</EmptyTitle>
-              <EmptyDescription>Invite people to join your workspace.</EmptyDescription>
-            </EmptyHeader>
-          </EmptyContent>
-        </Empty>
-      </CardContent>
-    </Card>
-
-    <!-- Pending Invitations -->
-    <Card v-if="invitations.length > 0">
-      <CardHeader>
-        <CardTitle>Pending Invitations ({{ invitations.length }})</CardTitle>
-        <CardDescription>Invitations waiting to be accepted</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div class="space-y-3">
-          <div
-            v-for="invitation in invitations"
-            :key="invitation.id"
-            class="flex items-center justify-between p-4 border rounded-lg"
-          >
-            <div class="flex items-center gap-4">
-              <MailIcon class="h-8 w-8 text-muted-foreground" />
-              <div>
-                <p class="font-medium">{{ invitation.email }}</p>
-                <p class="text-sm text-muted-foreground">
-                  Role: {{ invitation.memberType }} • Invited by {{ invitation.invitedBy.email }}
-                </p>
-              </div>
-            </div>
-            <Button size="sm" variant="destructive" @click="cancelInvite(invitation.id)">
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <Empty v-else>
+      <EmptyContent>
+        <EmptyMedia>
+          <Users class="h-12 w-12" />
+        </EmptyMedia>
+        <EmptyHeader>
+          <EmptyTitle>No Members</EmptyTitle>
+          <EmptyDescription>Invite people to join your workspace.</EmptyDescription>
+        </EmptyHeader>
+      </EmptyContent>
+    </Empty>
 
     <!-- Invite Member Dialog -->
     <Sheet v-model:open="showInviteDialog">
@@ -121,12 +85,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { workspaceApi } from '@/api/workspace'
 import { InviteMemberForm, UpdateMemberRoleForm, MembersDataTable } from '@/components/workspace'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -144,14 +107,15 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
-import { UserPlus, Users, MailIcon } from 'lucide-vue-next'
-import type { WorkspaceMemberResponse, WorkspaceInvitationResponse } from '@/types/workspace'
+import { UserPlus, Users } from 'lucide-vue-next'
+import type { WorkspaceMemberResponse } from '@/types/workspace'
+import { useWorkspacePermissions } from '@/composables/useWorkspacePermissions'
 
 const workspaceStore = useWorkspaceStore()
+const { canInviteMember, canUpdateMember, canDeleteMember } = useWorkspacePermissions()
 const workspace = computed(() => workspaceStore.activeWorkspace)
 
 const members = ref<WorkspaceMemberResponse[]>([])
-const invitations = ref<WorkspaceInvitationResponse[]>([])
 const loadingMembers = ref(false)
 const showInviteDialog = ref(false)
 const showUpdateRoleDialog = ref(false)
@@ -165,12 +129,8 @@ const loadMembers = async () => {
 
   loadingMembers.value = true
   try {
-    const [membersData, invitationsData] = await Promise.all([
-      workspaceApi.getMembers(workspace.value.id),
-      workspaceApi.getPendingInvitations(workspace.value.id),
-    ])
+    const membersData = await workspaceApi.getMembers(workspace.value.id)
     members.value = membersData
-    invitations.value = invitationsData
   } catch (error) {
     console.error('Failed to load members:', error)
     toast.error('Failed to load members')
@@ -179,10 +139,10 @@ const loadMembers = async () => {
   }
 }
 
-const handleInviteSuccess = (invitation: WorkspaceInvitationResponse) => {
+const handleInviteSuccess = () => {
   showInviteDialog.value = false
-  invitations.value.push(invitation)
   toast.success('Invitation sent successfully!')
+  // No need to reload, user can view invitations on the invitations page
 }
 
 const editMember = (member: WorkspaceMemberResponse) => {
@@ -211,18 +171,6 @@ const removeMember = async (member: WorkspaceMemberResponse) => {
   }
 }
 
-const cancelInvite = async (invitationId: string) => {
-  if (!workspace.value) return
-
-  try {
-    await workspaceApi.cancelInvitation(workspace.value.id, invitationId)
-    invitations.value = invitations.value.filter((i) => i.id !== invitationId)
-    toast.success('Invitation cancelled successfully!')
-  } catch (error) {
-    console.error('Failed to cancel invitation:', error)
-  }
-}
-
 onMounted(async () => {
   // Ensure workspace is loaded
   if (!workspace.value && !workspaceStore.isInitialized) {
@@ -240,4 +188,16 @@ onMounted(async () => {
     await loadMembers()
   }
 })
+
+// Watch for workspace changes and reload members
+watch(
+  () => workspaceStore.activeWorkspaceId,
+  async (newWorkspaceId, oldWorkspaceId) => {
+    if (newWorkspaceId && newWorkspaceId !== oldWorkspaceId) {
+      await loadMembers()
+    } else if (!newWorkspaceId) {
+      members.value = []
+    }
+  },
+)
 </script>

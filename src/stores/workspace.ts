@@ -4,6 +4,7 @@ import { workspaceApi } from '@/api/workspace'
 import type { WorkspaceResponse } from '@/types/workspace'
 import { getErrorMessage } from '@/lib/errorHandler'
 import type { WorkspaceFormData } from '@/lib/schemas/WorkspaceSchema'
+import { WorkspaceMemberType } from '@/types/permission'
 
 export const useWorkspaceStore = defineStore(
   'workspace',
@@ -19,6 +20,26 @@ export const useWorkspaceStore = defineStore(
     const activeWorkspaceId = computed(() => activeWorkspace.value?.id || null)
     const hasWorkspaces = computed(() => workspaces.value.length > 0)
     const hasActiveWorkspace = computed(() => !!activeWorkspace.value)
+    const currentMemberType = computed<WorkspaceMemberType | null>(() => {
+      if (!activeWorkspace.value) return null
+
+      // If backend provides currentUserMemberType, use it
+      if (activeWorkspace.value.currentUserMemberType) {
+        return activeWorkspace.value.currentUserMemberType
+      }
+
+      // Fallback: Check if current user is the workspace owner
+      const currentUserId = localStorage.getItem('user')
+        ? JSON.parse(localStorage.getItem('user')!).id
+        : null
+
+      if (currentUserId && activeWorkspace.value.owner?.id === currentUserId) {
+        return WorkspaceMemberType.OWNER
+      }
+
+      // Default to null if we can't determine (shouldn't happen for authenticated users)
+      return null
+    })
 
     // Actions
     const fetchWorkspaces = async () => {
@@ -154,6 +175,7 @@ export const useWorkspaceStore = defineStore(
       activeWorkspaceId,
       hasWorkspaces,
       hasActiveWorkspace,
+      currentMemberType,
 
       // Actions
       fetchWorkspaces,

@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { projectApi } from '@/api/project'
 import type { ProjectResponse } from '@/types/project'
 import type { ProjectFormData } from '@/lib/schemas/ProjectSchema'
 import { getErrorMessage } from '@/lib/errorHandler'
+import { ProjectMemberType } from '@/types/permission'
 
 export const useProjectStore = defineStore('project', () => {
   // State
@@ -11,6 +12,28 @@ export const useProjectStore = defineStore('project', () => {
   const currentProject = ref<ProjectResponse | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  // Getters
+  const currentMemberType = computed<ProjectMemberType | null>(() => {
+    if (!currentProject.value) return null
+
+    // If backend provides currentUserMemberType, use it
+    if (currentProject.value.currentUserMemberType) {
+      return currentProject.value.currentUserMemberType
+    }
+
+    // Fallback: Check if current user is the project owner
+    const currentUserId = localStorage.getItem('user')
+      ? JSON.parse(localStorage.getItem('user')!).id
+      : null
+
+    if (currentUserId && currentProject.value.owner?.id === currentUserId) {
+      return ProjectMemberType.PROJECT_LEAD
+    }
+
+    // Default to null if we can't determine
+    return null
+  })
 
   // Actions
   const fetchProjects = async (workspaceId: string) => {
@@ -128,6 +151,9 @@ export const useProjectStore = defineStore('project', () => {
     currentProject,
     isLoading,
     error,
+
+    // Getters
+    currentMemberType,
 
     // Actions
     fetchProjects,

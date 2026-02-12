@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronsUpDown, Plus, Building2 } from 'lucide-vue-next'
 import { computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,12 +19,17 @@ import {
 } from '@/components/ui/sidebar'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAuthStore } from '@/stores/auth'
+import { useTaskStore } from '@/stores/task'
+import { useProjectStore } from '@/stores/project'
 import type { WorkspaceResponse } from '@/types/workspace'
 
 const route = useRoute()
+const router = useRouter()
 const { isMobile } = useSidebar()
 const workspaceStore = useWorkspaceStore()
 const authStore = useAuthStore()
+const taskStore = useTaskStore()
+const projectStore = useProjectStore()
 
 // Get workspace ID from route params if available
 const workspaceIdFromRoute = computed(() => route.params.workspaceId as string | undefined)
@@ -66,9 +71,21 @@ const getWorkspaceInitials = (name: string) => {
 }
 
 const handleWorkspaceSelect = (workspace: WorkspaceResponse) => {
+  // Don't do anything if same workspace is selected
+  if (workspace.id === workspaceStore.activeWorkspace?.id) {
+    return
+  }
+
+  // Clear tasks and projects from old workspace
+  taskStore.clearTasks()
+  projectStore.clearProjects()
+
+  // Update active workspace
   workspaceStore.setActiveWorkspace(workspace)
-  // You can add navigation logic here if needed
-  // router.push(`/workspace/${workspace.id}`)
+
+  // Navigate to home page to show new workspace
+  // This ensures old tasks/data don't persist when switching workspaces
+  router.push('/')
 }
 </script>
 

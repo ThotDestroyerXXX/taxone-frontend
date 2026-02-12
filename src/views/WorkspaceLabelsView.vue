@@ -5,7 +5,7 @@
         <h1 class="text-3xl font-bold">Labels</h1>
         <p class="text-muted-foreground">Manage workspace labels for better organization</p>
       </div>
-      <Button @click="showCreateDialog = true">
+      <Button v-if="canManageLabels" @click="showCreateDialog = true">
         <Plus class="mr-2 h-4 w-4" />
         Create Label
       </Button>
@@ -52,7 +52,7 @@
                 <p class="text-sm text-muted-foreground">{{ label.description }}</p>
               </div>
             </div>
-            <div class="flex gap-2">
+            <div v-if="canManageLabels" class="flex gap-2">
               <Button size="sm" variant="outline">
                 <Settings class="h-4 w-4" />
               </Button>
@@ -74,7 +74,7 @@
                 Create labels to categorize and organize your tasks.
               </EmptyDescription>
             </EmptyHeader>
-            <Button @click="showCreateDialog = true" class="mt-4">
+            <Button v-if="canManageLabels" @click="showCreateDialog = true" class="mt-4">
               <Plus class="mr-2 h-4 w-4" />
               Create Label
             </Button>
@@ -132,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { workspaceApi } from '@/api/workspace'
@@ -157,9 +157,13 @@ import {
 } from '@/components/ui/empty'
 import { Plus, Tag, Settings, Trash2 } from 'lucide-vue-next'
 import type { LabelResponse } from '@/types/label'
+import { useWorkspacePermissions } from '@/composables/useWorkspacePermissions'
 
 const workspaceStore = useWorkspaceStore()
+const { isOwner, isAdmin } = useWorkspacePermissions()
 const workspace = computed(() => workspaceStore.activeWorkspace)
+// Labels can be managed by owners and admins
+const canManageLabels = computed(() => isOwner.value || isAdmin.value)
 
 const labels = ref<LabelResponse[]>([])
 const loading = ref(false)
@@ -205,4 +209,16 @@ onMounted(async () => {
     await loadLabels()
   }
 })
+
+// Watch for workspace changes and reload labels
+watch(
+  () => workspaceStore.activeWorkspaceId,
+  async (newWorkspaceId, oldWorkspaceId) => {
+    if (newWorkspaceId && newWorkspaceId !== oldWorkspaceId) {
+      await loadLabels()
+    } else if (!newWorkspaceId) {
+      labels.value = []
+    }
+  },
+)
 </script>

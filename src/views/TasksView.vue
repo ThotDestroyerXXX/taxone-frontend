@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTaskStore } from '@/stores/task'
 import { useProjectStore } from '@/stores/project'
@@ -22,11 +22,13 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { ListTodo, ArrowLeft, User, Calendar } from 'lucide-vue-next'
+import { useProjectPermissions } from '@/composables/useProjectPermissions'
 
 const route = useRoute()
 const router = useRouter()
 const taskStore = useTaskStore()
 const projectStore = useProjectStore()
+const { canCreateTask } = useProjectPermissions()
 
 const projectId = computed(() => route.params.projectId as string)
 const workspaceId = computed(() => route.params.workspaceId as string)
@@ -60,6 +62,28 @@ onMounted(async () => {
   await loadTasks()
 })
 
+// Watch for workspace changes and redirect to home
+watch(
+  () => workspaceId.value,
+  (newWorkspaceId, oldWorkspaceId) => {
+    // If workspace changes while on task view, clear tasks and go home
+    if (newWorkspaceId && oldWorkspaceId && newWorkspaceId !== oldWorkspaceId) {
+      taskStore.clearTasks()
+      router.push('/')
+    }
+  },
+)
+
+// Watch for project changes and reload tasks
+watch(
+  () => projectId.value,
+  async (newProjectId, oldProjectId) => {
+    if (newProjectId && newProjectId !== oldProjectId) {
+      await loadTasks()
+    }
+  },
+)
+
 const handleRefresh = async () => {
   await loadTasks()
 }
@@ -71,30 +95,30 @@ const handleBack = () => {
 const getPriorityColor = (priority: string) => {
   switch (priority?.toLowerCase()) {
     case 'critical':
-      return 'bg-red-100 text-red-800'
+      return 'bg-destructive/10 text-destructive dark:bg-destructive/20'
     case 'high':
-      return 'bg-orange-100 text-orange-800'
+      return 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-400'
     case 'medium':
-      return 'bg-yellow-100 text-yellow-800'
+      return 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
     case 'low':
-      return 'bg-blue-100 text-blue-800'
+      return 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400'
     default:
-      return 'bg-gray-100 text-gray-800'
+      return 'bg-secondary text-secondary-foreground'
   }
 }
 
 const getPriorityBarColor = (priority: string) => {
   switch (priority?.toLowerCase()) {
     case 'critical':
-      return '#ef4444'
+      return 'hsl(var(--destructive))'
     case 'high':
-      return '#f97316'
+      return 'hsl(24.6 95% 53.1%)'
     case 'medium':
-      return '#eab308'
+      return 'hsl(47.9 95.8% 53.1%)'
     case 'low':
-      return '#3b82f6'
+      return 'hsl(221.2 83.2% 53.3%)'
     default:
-      return '#6b7280'
+      return 'hsl(var(--muted-foreground))'
   }
 }
 
@@ -102,15 +126,15 @@ const getStatusColor = (status: string) => {
   switch (status?.toLowerCase()) {
     case 'done':
     case 'completed':
-      return 'bg-green-50 text-green-700 ring-green-600/20'
+      return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-400/20'
     case 'in progress':
     case 'in_progress':
-      return 'bg-blue-50 text-blue-700 ring-blue-600/20'
+      return 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-400/20'
     case 'todo':
     case 'open':
-      return 'bg-gray-50 text-gray-700 ring-gray-600/20'
+      return 'bg-muted text-muted-foreground ring-border'
     default:
-      return 'bg-purple-50 text-purple-700 ring-purple-600/20'
+      return 'bg-purple-50 text-purple-700 ring-purple-600/20 dark:bg-purple-950 dark:text-purple-400 dark:ring-purple-400/20'
   }
 }
 
@@ -222,7 +246,7 @@ const formatDate = (dateString: string) => {
         >
       </EmptyHeader>
       <EmptyContent>
-        <Button>Create Task</Button>
+        <Button v-if="canCreateTask">Create Task</Button>
       </EmptyContent>
     </Empty>
 

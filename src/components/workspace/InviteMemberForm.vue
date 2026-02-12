@@ -16,18 +16,19 @@
     <FormField v-slot="{ componentField }" name="memberType">
       <FormItem>
         <FormLabel>Role</FormLabel>
-        <FormControl>
-          <select
-            v-bind="componentField"
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <option value="">Select a role</option>
-            <option value="OWNER">Owner</option>
-            <option value="ADMIN">Admin</option>
-            <option value="MEMBER">Member</option>
-            <option value="GUEST">Guest</option>
-          </select>
-        </FormControl>
+        <Select v-bind="componentField">
+          <FormControl>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a role" />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent>
+            <SelectItem value="OWNER">Owner</SelectItem>
+            <SelectItem value="ADMIN">Admin</SelectItem>
+            <SelectItem value="MEMBER">Member</SelectItem>
+            <SelectItem value="GUEST">Guest</SelectItem>
+          </SelectContent>
+        </Select>
         <FormDescription> Select the role for this member. </FormDescription>
         <FormMessage />
       </FormItem>
@@ -61,6 +62,13 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface Props {
   workspaceId: string

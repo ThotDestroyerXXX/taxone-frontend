@@ -1,15 +1,19 @@
 <template>
-  <div class="about">
-    <h1>This is an about page</h1>
+  <div class="container mx-auto py-6">
+    <div class="space-y-4">
+      <h1 class="text-3xl font-bold">About</h1>
+      <p class="text-muted-foreground">This is an about page</p>
+    </div>
   </div>
 </template>
 
-<style>
+<style scoped>
 @media (min-width: 1024px) {
-  .about {
+  .container {
     min-height: 100vh;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    justify-content: center;
   }
 }
 </style>

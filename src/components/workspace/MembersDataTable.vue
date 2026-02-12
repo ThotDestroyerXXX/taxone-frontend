@@ -61,6 +61,8 @@ import {
 import { ArrowUpDown, Settings, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   Table,
   TableBody,
@@ -73,9 +75,14 @@ import type { WorkspaceMemberResponse } from '@/types/workspace'
 
 interface Props {
   members: WorkspaceMemberResponse[]
+  canEdit?: boolean
+  canRemove?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  canEdit: true,
+  canRemove: true,
+})
 const emit = defineEmits<{
   edit: [member: WorkspaceMemberResponse]
   remove: [member: WorkspaceMemberResponse]
@@ -96,18 +103,20 @@ const formatDate = (dateString: string) => {
   })
 }
 
-const getMemberTypeColor = (type: string) => {
+const getMemberTypeVariant = (
+  type: string,
+): 'default' | 'secondary' | 'destructive' | 'outline' => {
   switch (type) {
     case 'OWNER':
-      return 'bg-purple-100 text-purple-800'
+      return 'default'
     case 'ADMIN':
-      return 'bg-blue-100 text-blue-800'
+      return 'secondary'
     case 'MEMBER':
-      return 'bg-green-100 text-green-800'
+      return 'outline'
     case 'GUEST':
-      return 'bg-gray-100 text-gray-800'
+      return 'outline'
     default:
-      return 'bg-gray-100 text-gray-800'
+      return 'outline'
   }
 }
 
@@ -118,14 +127,7 @@ const columns: ColumnDef<WorkspaceMemberResponse>[] = [
     cell: ({ row }) => {
       const member = row.original
       return h('div', { class: 'flex items-center gap-3' }, [
-        h(
-          'div',
-          {
-            class:
-              'h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold shrink-0',
-          },
-          getInitials(member.user.email),
-        ),
+        h(Avatar, {}, () => [h(AvatarFallback, {}, () => getInitials(member.user.email))]),
         h(
           'div',
           { class: 'flex flex-col' },
@@ -149,11 +151,11 @@ const columns: ColumnDef<WorkspaceMemberResponse>[] = [
     cell: ({ row }) => {
       const type = row.original.memberType
       return h(
-        'span',
+        Badge,
         {
-          class: `inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getMemberTypeColor(type)}`,
+          variant: getMemberTypeVariant(type),
         },
-        type,
+        () => type,
       )
     },
   },
@@ -184,26 +186,39 @@ const columns: ColumnDef<WorkspaceMemberResponse>[] = [
     header: 'Actions',
     cell: ({ row }) => {
       const member = row.original
-      return h('div', { class: 'flex items-center gap-2' }, [
-        h(
-          Button,
-          {
-            size: 'sm',
-            variant: 'outline',
-            onClick: () => emit('edit', member),
-          },
-          () => [h(Settings, { class: 'h-4 w-4' })],
-        ),
-        h(
-          Button,
-          {
-            size: 'sm',
-            variant: 'destructive',
-            onClick: () => emit('remove', member),
-          },
-          () => [h(Trash2, { class: 'h-4 w-4' })],
-        ),
-      ])
+      const actions = []
+
+      if (props.canEdit) {
+        actions.push(
+          h(
+            Button,
+            {
+              size: 'sm',
+              variant: 'outline',
+              onClick: () => emit('edit', member),
+            },
+            () => [h(Settings, { class: 'h-4 w-4' })],
+          ),
+        )
+      }
+
+      if (props.canRemove) {
+        actions.push(
+          h(
+            Button,
+            {
+              size: 'sm',
+              variant: 'destructive',
+              onClick: () => emit('remove', member),
+            },
+            () => [h(Trash2, { class: 'h-4 w-4' })],
+          ),
+        )
+      }
+
+      return actions.length > 0
+        ? h('div', { class: 'flex items-center gap-2' }, actions)
+        : h('span', { class: 'text-sm text-muted-foreground' }, '-')
     },
   },
 ]

@@ -1,4 +1,5 @@
 import type { UserResponse } from './user'
+import type { WorkspaceMemberType } from './permission'
 
 export interface WorkspaceResponse {
   id: string
@@ -10,6 +11,7 @@ export interface WorkspaceResponse {
   slug: string
   logoUrl?: string
   isActive: boolean
+  currentUserMemberType?: WorkspaceMemberType
   // Add other workspace properties as needed
 }
 

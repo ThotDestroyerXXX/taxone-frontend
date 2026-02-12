@@ -47,7 +47,9 @@
             <span
               class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
               :class="
-                workspace.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                workspace.isActive
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                  : 'bg-destructive/10 text-destructive dark:bg-destructive/20'
               "
             >
               {{ workspace.isActive ? 'Active' : 'Inactive' }}
@@ -55,15 +57,23 @@
           </div>
 
           <div class="flex gap-2 pt-4">
-            <Button @click="isEditing = true">
+            <Button v-if="canUpdateWorkspace" @click="isEditing = true">
               <Settings class="mr-2 h-4 w-4" />
               Edit Workspace
             </Button>
-            <Button variant="outline" @click="handleRestore" v-if="!workspace.isActive">
+            <Button
+              v-if="canRestoreWorkspace && !workspace.isActive"
+              variant="outline"
+              @click="handleRestore"
+            >
               <RefreshCw class="mr-2 h-4 w-4" />
               Restore Workspace
             </Button>
-            <Button variant="destructive" @click="handleDelete" v-if="workspace.isActive">
+            <Button
+              v-if="canDeleteWorkspace && workspace.isActive"
+              variant="destructive"
+              @click="handleDelete"
+            >
               <Trash2 class="mr-2 h-4 w-4" />
               Delete Workspace
             </Button>
@@ -106,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -124,9 +134,11 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { Building2, Settings, Trash2, RefreshCw } from 'lucide-vue-next'
+import { useWorkspacePermissions } from '@/composables/useWorkspacePermissions'
 
 const router = useRouter()
 const workspaceStore = useWorkspaceStore()
+const { canUpdateWorkspace, canDeleteWorkspace, canRestoreWorkspace } = useWorkspacePermissions()
 const workspace = computed(() => workspaceStore.activeWorkspace)
 const loading = computed(() => workspaceStore.isLoading)
 
@@ -179,4 +191,14 @@ onMounted(async () => {
     }
   }
 })
+
+// Watch for workspace changes and reset editing mode
+watch(
+  () => workspaceStore.activeWorkspaceId,
+  (newWorkspaceId, oldWorkspaceId) => {
+    if (newWorkspaceId !== oldWorkspaceId) {
+      isEditing.value = false
+    }
+  },
+)
 </script>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SidebarProps } from '@/components/ui/sidebar'
 
-import { Home, FolderKanban, Users, Tag, Settings } from 'lucide-vue-next'
+import { Home, FolderKanban, Users, Tag, Settings, Mail } from 'lucide-vue-next'
 import NavMain from '@/components/NavMain.vue'
 import NavProjects from '@/components/NavProjects.vue'
 import NavUser from '@/components/NavUser.vue'
@@ -38,6 +38,12 @@ const data = {
       title: 'Members',
       url: '/workspace/members',
       icon: Users,
+      isActive: false,
+    },
+    {
+      title: 'Invitations',
+      url: '/workspace/invitations',
+      icon: Mail,
       isActive: false,
     },
     {
