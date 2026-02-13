@@ -3,6 +3,7 @@ import { onMounted, computed, watch, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTaskStore } from '@/stores/task'
 import { useProjectStore } from '@/stores/project'
+import { workspaceApi } from '@/api/workspace'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -42,7 +43,10 @@ import { formatDate } from '@/utils/formatters'
 import { getStatusColor, getPriorityClass, getPriorityBarColor } from '@/utils/statusColors'
 import TaskCalendarView from '@/components/workspace/TaskCalendarView.vue'
 import CreateTaskForm from '@/components/workspace/CreateTaskForm.vue'
+import TaskLabel from '@/components/task/TaskLabel.vue'
+import LabelFilter from '@/components/task/LabelFilter.vue'
 import type { TaskResponse } from '@/types/task'
+import type { LabelResponse } from '@/types/label'
 
 const route = useRoute()
 const router = useRouter()
@@ -56,6 +60,32 @@ const workspaceId = computed(() => route.params.workspaceId as string)
 // Get current project info
 const currentProject = computed(() => {
   return projectStore.projects.find((p) => p.id === projectId.value) || null
+})
+
+// Labels
+const availableLabels = ref<LabelResponse[]>([])
+const selectedLabelIds = ref<string[]>([])
+
+const loadLabels = async () => {
+  if (!workspaceId.value) return
+
+  try {
+    availableLabels.value = await workspaceApi.getLabels(workspaceId.value)
+  } catch (err) {
+    console.error('Failed to load labels:', err)
+  }
+}
+
+// Filtered tasks based on selected labels
+const filteredTasks = computed(() => {
+  if (selectedLabelIds.value.length === 0) {
+    return taskStore.tasks
+  }
+
+  return taskStore.tasks.filter((task) => {
+    // Task must have at least one of the selected labels
+    return task.labels?.some((label) => selectedLabelIds.value.includes(label.id))
+  })
 })
 
 const loadTasks = async () => {
@@ -77,6 +107,9 @@ onMounted(async () => {
       console.error('Failed to load project info:', err)
     }
   }
+
+  // Load labels
+  await loadLabels()
 
   // Load tasks
   await loadTasks()
@@ -155,7 +188,10 @@ const handleTaskClick = (task: TaskResponse) => {
             </span>
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Label Filter -->
+          <LabelFilter v-model="selectedLabelIds" :labels="availableLabels" />
+
           <!-- View Toggle -->
           <div class="flex items-center rounded-lg border bg-background p-1">
             <Button
@@ -304,14 +340,14 @@ const handleTaskClick = (task: TaskResponse) => {
     <!-- Calendar View -->
     <TaskCalendarView
       v-else-if="viewMode === 'calendar'"
-      :tasks="taskStore.tasks"
+      :tasks="filteredTasks"
       @task-click="handleTaskClick"
     />
 
     <!-- Tasks Grid (List View) -->
     <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <Card
-        v-for="task in taskStore.tasks"
+        v-for="task in filteredTasks"
         :key="task.id"
         class="hover:shadow-lg transition-shadow cursor-pointer pt-0 overflow-hidden"
       >
@@ -353,6 +389,22 @@ const handleTaskClick = (task: TaskResponse) => {
             </span>
           </div>
 
+          <!-- Labels - Prominent display -->
+          <div v-if="task.labels?.length > 0" class="flex flex-wrap gap-1.5 mb-3">
+            <TaskLabel
+              v-for="label in task.labels.slice(0, 4)"
+              :key="label.id"
+              :label="label"
+              size="sm"
+            />
+            <span
+              v-if="task.labels.length > 4"
+              class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-muted-foreground bg-muted"
+            >
+              +{{ task.labels.length - 4 }}
+            </span>
+          </div>
+
           <div class="space-y-2 text-xs text-muted-foreground">
             <!-- Reporter -->
             <div class="flex items-center gap-2">
@@ -385,28 +437,6 @@ const handleTaskClick = (task: TaskResponse) => {
                   +{{ task.assignees.length - 3 }}
                 </div>
               </div>
-            </div>
-
-            <!-- Labels -->
-            <div v-if="task.labels?.length > 0" class="flex flex-wrap gap-1 pt-1">
-              <span
-                v-for="label in task.labels.slice(0, 3)"
-                :key="label.id"
-                class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
-                :style="{
-                  backgroundColor: label.color + '20',
-                  color: label.color,
-                  borderColor: label.color,
-                }"
-              >
-                {{ label.name }}
-              </span>
-              <span
-                v-if="task.labels.length > 3"
-                class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-muted-foreground"
-              >
-                +{{ task.labels.length - 3 }}
-              </span>
             </div>
           </div>
         </CardContent>

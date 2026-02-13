@@ -32,7 +32,7 @@
         <div
           v-for="(day, index) in calendarDays"
           :key="index"
-          class="min-h-[120px] border-t border-l p-2 transition-colors"
+          class="min-h-30 border-t border-l p-2 transition-colors"
           :class="{
             'bg-muted/30': !day.isCurrentMonth,
             'bg-primary/5 ring-2 ring-primary ring-inset': day.isToday,
@@ -54,29 +54,80 @@
           </div>
 
           <!-- Tasks for the day -->
-          <div class="space-y-1">
-            <div
-              v-for="task in day.tasks.slice(0, 3)"
-              :key="task.id"
-              class="group rounded px-2 py-1 text-xs truncate cursor-pointer hover:shadow-md transition-all"
-              :style="{
-                backgroundColor: getPriorityBarColor(task.priority) + '20',
-                borderLeft: `3px solid ${getPriorityBarColor(task.priority)}`,
-              }"
-              :title="`${task.taskKey}: ${task.title}\nPriority: ${task.priority}\nStatus: ${task.status}`"
-              @click="$emit('task-click', task)"
-            >
-              <span class="font-medium">{{ task.taskKey }}</span>
-              <span class="ml-1">{{ task.title }}</span>
+          <TooltipProvider>
+            <div class="space-y-1">
+              <Tooltip v-for="task in day.tasks.slice(0, 3)" :key="task.id" :delay-duration="200">
+                <TooltipTrigger as-child>
+                  <div
+                    class="group rounded px-2 py-1 text-xs truncate cursor-pointer hover:shadow-md transition-all"
+                    :style="{
+                      backgroundColor: getPriorityBarColor(task.priority) + '20',
+                      borderLeft: `3px solid ${getPriorityBarColor(task.priority)}`,
+                    }"
+                    @click="$emit('task-click', task)"
+                  >
+                    <span class="font-medium">{{ task.taskKey }}</span>
+                    <span class="ml-1">{{ task.title }}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent class="max-w-xs bg-foreground" side="right">
+                  <div class="space-y-2">
+                    <div>
+                      <p class="font-semibold line-clamp-1">{{ task.taskKey }}: {{ task.title }}</p>
+                      <p
+                        v-if="task.description"
+                        class="text-xs text-muted-foreground mt-1 line-clamp-2"
+                      >
+                        {{ task.description }}
+                      </p>
+                    </div>
+                    <div class="flex gap-2 text-xs">
+                      <span class="font-medium">Status:</span>
+                      <span>{{ task.status }}</span>
+                    </div>
+                    <div class="flex gap-2 text-xs">
+                      <span class="font-medium">Priority:</span>
+                      <span>{{ task.priority }}</span>
+                    </div>
+                    <div v-if="task.assignees?.length > 0" class="flex gap-2 text-xs">
+                      <span class="font-medium">Assignees:</span>
+                      <span>{{
+                        task.assignees.map((a) => `${a.firstName} ${a.lastName}`).join(', ')
+                      }}</span>
+                    </div>
+                    <div v-if="task.labels?.length > 0" class="flex flex-col gap-1">
+                      <span class="font-medium text-xs">Labels:</span>
+                      <div class="flex flex-wrap gap-1">
+                        <span
+                          v-for="label in task.labels"
+                          :key="label.id"
+                          class="flex flex-row items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium"
+                          :style="{
+                            backgroundColor: label.color + '20',
+                            color: label.color,
+                            border: `1px solid ${label.color}60`,
+                          }"
+                        >
+                          <div
+                            class="w-1.5 h-1.5 rounded-full shrink-0"
+                            :style="{ backgroundColor: label.color }"
+                          />
+                          <span class="line-clamp-1">{{ label.name }}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+              <div
+                v-if="day.tasks.length > 3"
+                class="text-xs text-muted-foreground px-2 py-1 cursor-pointer hover:underline"
+                @click="showMoreTasks(day)"
+              >
+                +{{ day.tasks.length - 3 }} more
+              </div>
             </div>
-            <div
-              v-if="day.tasks.length > 3"
-              class="text-xs text-muted-foreground px-2 py-1 cursor-pointer hover:underline"
-              @click="showMoreTasks(day)"
-            >
-              +{{ day.tasks.length - 3 }} more
-            </div>
-          </div>
+          </TooltipProvider>
         </div>
       </div>
     </div>
@@ -115,6 +166,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { getPriorityBarColor } from '@/utils/statusColors'
 import type { TaskResponse } from '@/types/task'
