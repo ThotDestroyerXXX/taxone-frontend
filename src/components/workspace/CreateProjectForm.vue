@@ -69,22 +69,74 @@
     </div>
 
     <div class="grid grid-cols-2 gap-4">
-      <FormField v-slot="{ componentField }" name="startDate">
-        <FormItem>
+      <FormField v-slot="{ componentField, value }" name="startDate">
+        <FormItem class="flex flex-col">
           <FormLabel>Start Date</FormLabel>
-          <FormControl>
-            <Input type="date" v-bind="componentField" />
-          </FormControl>
+          <Popover>
+            <PopoverTrigger as-child>
+              <FormControl>
+                <Button
+                  variant="outline"
+                  :class="['w-full pl-3 text-left font-normal', !value && 'text-muted-foreground']"
+                >
+                  <span>{{ value ? formatDate(value) : 'Pick a date' }}</span>
+                  <CalendarIcon class="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </FormControl>
+            </PopoverTrigger>
+            <PopoverContent class="w-auto p-0" align="start">
+              <Calendar
+                v-model="componentField.modelValue"
+                initial-focus
+                @update:model-value="
+                  (date) => {
+                    if (date) {
+                      const jsDate = new Date(date.year, date.month - 1, date.day)
+                      componentField.modelValue = formatDateToISO(jsDate)
+                    } else {
+                      componentField.modelValue = ''
+                    }
+                  }
+                "
+              />
+            </PopoverContent>
+          </Popover>
           <FormMessage />
         </FormItem>
       </FormField>
 
-      <FormField v-slot="{ componentField }" name="endDate">
-        <FormItem>
+      <FormField v-slot="{ componentField, value }" name="endDate">
+        <FormItem class="flex flex-col">
           <FormLabel>End Date</FormLabel>
-          <FormControl>
-            <Input type="date" v-bind="componentField" />
-          </FormControl>
+          <Popover>
+            <PopoverTrigger as-child>
+              <FormControl>
+                <Button
+                  variant="outline"
+                  :class="['w-full pl-3 text-left font-normal', !value && 'text-muted-foreground']"
+                >
+                  <span>{{ value ? formatDate(value) : 'Pick a date' }}</span>
+                  <CalendarIcon class="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </FormControl>
+            </PopoverTrigger>
+            <PopoverContent class="w-auto p-0" align="start">
+              <Calendar
+                v-model="componentField.modelValue"
+                initial-focus
+                @update:model-value="
+                  (date) => {
+                    if (date) {
+                      const jsDate = new Date(date.year, date.month - 1, date.day)
+                      componentField.modelValue = formatDateToISO(jsDate)
+                    } else {
+                      componentField.modelValue = ''
+                    }
+                  }
+                "
+              />
+            </PopoverContent>
+          </Popover>
           <FormMessage />
         </FormItem>
       </FormField>
@@ -138,6 +190,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { Calendar as CalendarIcon } from 'lucide-vue-next'
+import { formatDate } from '@/utils/formatters'
 
 interface Props {
   workspaceId: string
@@ -156,6 +212,13 @@ const { handleSubmit, isSubmitting } = useForm({
     isPublic: false,
   },
 })
+
+const formatDateToISO = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 const onSubmit = handleSubmit(async (values: ProjectFormData) => {
   try {

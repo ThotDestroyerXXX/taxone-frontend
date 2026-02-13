@@ -109,13 +109,13 @@
     </Card>
 
     <!-- Create Label Dialog -->
-    <Sheet v-model:open="showCreateDialog">
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Create New Label</SheetTitle>
-          <SheetDescription>Add a new label to your workspace.</SheetDescription>
-        </SheetHeader>
-        <div class="mt-6 px-6">
+    <Dialog v-model:open="showCreateDialog">
+      <DialogContent class="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Create New Label</DialogTitle>
+          <DialogDescription>Add a new label to your workspace.</DialogDescription>
+        </DialogHeader>
+        <div class="mt-4">
           <CreateLabelForm
             v-if="workspace"
             :workspace-id="workspace.id"
@@ -126,8 +126,8 @@
             <p>Loading workspace...</p>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -141,12 +141,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Empty,
   EmptyContent,

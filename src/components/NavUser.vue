@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from 'lucide-vue-next'
+import { BadgeCheck, ChevronsUpDown, LogOut } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { toast } from 'vue-sonner'
 
@@ -85,10 +85,6 @@ const handleLogout = async () => {
             <DropdownMenuItem>
               <BadgeCheck />
               Account Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Bell />
-              Notifications
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />

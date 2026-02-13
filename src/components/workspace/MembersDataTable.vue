@@ -72,6 +72,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import type { WorkspaceMemberResponse } from '@/types/workspace'
+import { formatDate, getInitials } from '@/utils/formatters'
+import { getMemberTypeVariant } from '@/utils/statusColors'
 
 interface Props {
   members: WorkspaceMemberResponse[]
@@ -90,35 +92,6 @@ const emit = defineEmits<{
 
 const sorting = ref<SortingState>([])
 const globalFilter = ref('')
-
-const getInitials = (email: string) => {
-  return email.substring(0, 2).toUpperCase()
-}
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
-const getMemberTypeVariant = (
-  type: string,
-): 'default' | 'secondary' | 'destructive' | 'outline' => {
-  switch (type) {
-    case 'OWNER':
-      return 'default'
-    case 'ADMIN':
-      return 'secondary'
-    case 'MEMBER':
-      return 'outline'
-    case 'GUEST':
-      return 'outline'
-    default:
-      return 'outline'
-  }
-}
 
 const columns: ColumnDef<WorkspaceMemberResponse>[] = [
   {

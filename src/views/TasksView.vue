@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed, watch } from 'vue'
+import { onMounted, computed, watch, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTaskStore } from '@/stores/task'
 import { useProjectStore } from '@/stores/project'
@@ -21,8 +21,28 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
-import { ListTodo, ArrowLeft, User, Calendar } from 'lucide-vue-next'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  ListTodo,
+  ArrowLeft,
+  User,
+  Calendar,
+  LayoutList,
+  CalendarDays,
+  Plus,
+} from 'lucide-vue-next'
 import { useProjectPermissions } from '@/composables/useProjectPermissions'
+import { formatDate } from '@/utils/formatters'
+import { getStatusColor, getPriorityClass, getPriorityBarColor } from '@/utils/statusColors'
+import TaskCalendarView from '@/components/workspace/TaskCalendarView.vue'
+import CreateTaskForm from '@/components/workspace/CreateTaskForm.vue'
+import type { TaskResponse } from '@/types/task'
 
 const route = useRoute()
 const router = useRouter()
@@ -92,55 +112,25 @@ const handleBack = () => {
   router.push('/')
 }
 
-const getPriorityColor = (priority: string) => {
-  switch (priority?.toLowerCase()) {
-    case 'critical':
-      return 'bg-destructive/10 text-destructive dark:bg-destructive/20'
-    case 'high':
-      return 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-400'
-    case 'medium':
-      return 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
-    case 'low':
-      return 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400'
-    default:
-      return 'bg-secondary text-secondary-foreground'
-  }
+// View toggle
+type ViewMode = 'list' | 'calendar'
+const viewMode = ref<ViewMode>('list')
+
+// Create task dialog
+const showCreateDialog = ref(false)
+
+const handleCreateTask = () => {
+  showCreateDialog.value = true
 }
 
-const getPriorityBarColor = (priority: string) => {
-  switch (priority?.toLowerCase()) {
-    case 'critical':
-      return 'hsl(var(--destructive))'
-    case 'high':
-      return 'hsl(24.6 95% 53.1%)'
-    case 'medium':
-      return 'hsl(47.9 95.8% 53.1%)'
-    case 'low':
-      return 'hsl(221.2 83.2% 53.3%)'
-    default:
-      return 'hsl(var(--muted-foreground))'
-  }
+const handleCreateSuccess = async () => {
+  showCreateDialog.value = false
+  await loadTasks()
 }
 
-const getStatusColor = (status: string) => {
-  switch (status?.toLowerCase()) {
-    case 'done':
-    case 'completed':
-      return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-400/20'
-    case 'in progress':
-    case 'in_progress':
-      return 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-400/20'
-    case 'todo':
-    case 'open':
-      return 'bg-muted text-muted-foreground ring-border'
-    default:
-      return 'bg-purple-50 text-purple-700 ring-purple-600/20 dark:bg-purple-950 dark:text-purple-400 dark:ring-purple-400/20'
-  }
-}
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const handleTaskClick = (task: TaskResponse) => {
+  // Future: Navigate to task detail or open task dialog
+  console.log('Task clicked:', task)
 }
 </script>
 
@@ -165,28 +155,89 @@ const formatDate = (dateString: string) => {
             </span>
           </p>
         </div>
-        <Button @click="handleRefresh" :disabled="taskStore.isLoading">
-          <svg
-            v-if="!taskStore.isLoading"
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="mr-2"
-          >
-            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-            <path d="M21 3v5h-5" />
-          </svg>
-          <span v-if="taskStore.isLoading">Refreshing...</span>
-          <span v-else>Refresh</span>
-        </Button>
+        <div class="flex items-center gap-2">
+          <!-- View Toggle -->
+          <div class="flex items-center rounded-lg border bg-background p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              :class="[
+                'h-8 gap-2',
+                viewMode === 'list'
+                  ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+                  : 'hover:bg-transparent',
+              ]"
+              @click="viewMode = 'list'"
+            >
+              <LayoutList class="h-4 w-4" />
+              <span class="hidden sm:inline">List</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              :class="[
+                'h-8 gap-2',
+                viewMode === 'calendar'
+                  ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+                  : 'hover:bg-transparent',
+              ]"
+              @click="viewMode = 'calendar'"
+            >
+              <CalendarDays class="h-4 w-4" />
+              <span class="hidden sm:inline">Calendar</span>
+            </Button>
+          </div>
+
+          <!-- Create Task Button -->
+          <Button v-if="canCreateTask" @click="handleCreateTask">
+            <Plus class="mr-2 h-4 w-4" />
+            Create Task
+          </Button>
+
+          <!-- Refresh Button -->
+          <Button variant="outline" @click="handleRefresh" :disabled="taskStore.isLoading">
+            <svg
+              v-if="!taskStore.isLoading"
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4"
+            >
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+            </svg>
+            <span v-if="taskStore.isLoading" class="sr-only">Refreshing...</span>
+          </Button>
+        </div>
       </div>
     </div>
+
+    <!-- Create Task Dialog -->
+    <Dialog v-model:open="showCreateDialog">
+      <DialogContent class="sm:max-w-150 max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create New Task</DialogTitle>
+          <DialogDescription>Add a new task to this project.</DialogDescription>
+        </DialogHeader>
+        <div class="mt-4">
+          <CreateTaskForm
+            v-if="projectId"
+            :project-id="projectId"
+            @success="handleCreateSuccess"
+            @cancel="showCreateDialog = false"
+          />
+          <div v-else class="text-center text-muted-foreground py-8">
+            <p>Loading project...</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
 
     <!-- Loading State -->
     <div
@@ -246,11 +297,18 @@ const formatDate = (dateString: string) => {
         >
       </EmptyHeader>
       <EmptyContent>
-        <Button v-if="canCreateTask">Create Task</Button>
+        <Button v-if="canCreateTask" @click="handleCreateTask">Create Task</Button>
       </EmptyContent>
     </Empty>
 
-    <!-- Tasks Grid -->
+    <!-- Calendar View -->
+    <TaskCalendarView
+      v-else-if="viewMode === 'calendar'"
+      :tasks="taskStore.tasks"
+      @task-click="handleTaskClick"
+    />
+
+    <!-- Tasks Grid (List View) -->
     <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <Card
         v-for="task in taskStore.tasks"
@@ -289,7 +347,7 @@ const formatDate = (dateString: string) => {
             </span>
             <span
               class="px-2 py-1 rounded text-xs font-medium"
-              :class="getPriorityColor(task.priority)"
+              :class="getPriorityClass(task.priority)"
             >
               {{ task.priority }}
             </span>

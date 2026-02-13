@@ -38,13 +38,13 @@
     </Empty>
 
     <!-- Invite Member Dialog -->
-    <Sheet v-model:open="showInviteDialog">
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Invite Team Member</SheetTitle>
-          <SheetDescription>Send an invitation to join your workspace.</SheetDescription>
-        </SheetHeader>
-        <div class="mt-6 px-6">
+    <Dialog v-model:open="showInviteDialog">
+      <DialogContent class="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Invite Team Member</DialogTitle>
+          <DialogDescription>Send an invitation to join your workspace.</DialogDescription>
+        </DialogHeader>
+        <div class="mt-4">
           <InviteMemberForm
             v-if="workspace"
             :workspace-id="workspace.id"
@@ -55,19 +55,19 @@
             <p>Loading workspace...</p>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
 
     <!-- Update Member Role Dialog -->
-    <Sheet v-model:open="showUpdateRoleDialog">
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Update Member Role</SheetTitle>
-          <SheetDescription>
+    <Dialog v-model:open="showUpdateRoleDialog">
+      <DialogContent class="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Update Member Role</DialogTitle>
+          <DialogDescription>
             Change the role for {{ selectedMember?.user.email }}
-          </SheetDescription>
-        </SheetHeader>
-        <div class="mt-6 px-6">
+          </DialogDescription>
+        </DialogHeader>
+        <div class="mt-4">
           <UpdateMemberRoleForm
             v-if="selectedMember && workspace"
             :workspace-id="workspace.id"
@@ -79,8 +79,8 @@
             <p>Loading workspace...</p>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -93,12 +93,12 @@ import { InviteMemberForm, UpdateMemberRoleForm, MembersDataTable } from '@/comp
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Empty,
   EmptyContent,

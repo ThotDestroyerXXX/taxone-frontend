@@ -43,7 +43,7 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
                   <p class="font-semibold text-lg">{{ invitation.email }}</p>
-                  <Badge :variant="getStatusVariant(invitation.status)">
+                  <Badge :variant="getInvitationStatusVariant(invitation.status)">
                     {{ invitation.status }}
                   </Badge>
                 </div>
@@ -104,13 +104,13 @@
     </Empty>
 
     <!-- Invite Member Dialog -->
-    <Sheet v-model:open="showInviteDialog">
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Invite Team Member</SheetTitle>
-          <SheetDescription>Send an invitation to join your workspace.</SheetDescription>
-        </SheetHeader>
-        <div class="mt-6 px-6">
+    <Dialog v-model:open="showInviteDialog">
+      <DialogContent class="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Invite Team Member</DialogTitle>
+          <DialogDescription>Send an invitation to join your workspace.</DialogDescription>
+        </DialogHeader>
+        <div class="mt-4">
           <InviteMemberForm
             v-if="workspace"
             :workspace-id="workspace.id"
@@ -121,8 +121,8 @@
             <p>Loading workspace...</p>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -138,12 +138,12 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Empty,
   EmptyContent,
@@ -155,6 +155,8 @@ import {
 import { UserPlus, Mail, Shield, User, X, RefreshCw } from 'lucide-vue-next'
 import type { WorkspaceInvitationResponse } from '@/types/workspace'
 import { useWorkspacePermissions } from '@/composables/useWorkspacePermissions'
+import { getInitials } from '@/utils/formatters'
+import { getInvitationStatusVariant } from '@/utils/statusColors'
 
 const workspaceStore = useWorkspaceStore()
 const { canInviteMember, canCancelInvitation } = useWorkspacePermissions()
@@ -163,24 +165,6 @@ const workspace = computed(() => workspaceStore.activeWorkspace)
 const invitations = ref<WorkspaceInvitationResponse[]>([])
 const loading = ref(false)
 const showInviteDialog = ref(false)
-
-const getInitials = (email: string) => {
-  return email.substring(0, 2).toUpperCase()
-}
-
-const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
-  switch (status.toLowerCase()) {
-    case 'pending':
-      return 'secondary'
-    case 'accepted':
-      return 'default'
-    case 'rejected':
-    case 'cancelled':
-      return 'outline'
-    default:
-      return 'secondary'
-  }
-}
 
 const loadInvitations = async () => {
   if (!workspace.value) {

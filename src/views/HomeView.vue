@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/empty'
 import { FolderKanban, Building2, Calendar, User } from 'lucide-vue-next'
 import { useWorkspacePermissions } from '@/composables/useWorkspacePermissions'
+import { formatDate } from '@/utils/formatters'
+import { getStatusColor, getPriorityClass } from '@/utils/statusColors'
 
 const router = useRouter()
 const workspaceStore = useWorkspaceStore()
@@ -86,37 +88,6 @@ const handleViewProject = (projectId: string) => {
       workspaceId: workspaceStore.activeWorkspaceId,
       projectId,
     },
-  })
-}
-
-const getStatusColor = (status: string) => {
-  switch (status?.toLowerCase()) {
-    case 'active':
-      return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-400/20'
-    case 'archived':
-      return 'bg-muted text-muted-foreground ring-border'
-    case 'draft':
-      return 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-400/20'
-    default:
-      return 'bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-400/20'
-  }
-}
-
-const getPriorityClass = (priority: string) => {
-  const classes = {
-    LOW: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
-    MEDIUM: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-    HIGH: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
-    CRITICAL: 'bg-destructive/10 text-destructive dark:bg-destructive/20',
-  }
-  return classes[priority as keyof typeof classes] || 'bg-secondary text-secondary-foreground'
-}
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
   })
 }
 </script>

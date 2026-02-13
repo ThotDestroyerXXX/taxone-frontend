@@ -5,6 +5,7 @@ import { FolderKanban, Forward, MoreHorizontal, Trash2 } from 'lucide-vue-next'
 import { useProjectStore } from '@/stores/project'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAuthStore } from '@/stores/auth'
+import { useProjectNavigation } from '@/composables/useWorkspaceData'
 
 import {
   DropdownMenu,
@@ -28,14 +29,13 @@ const { isMobile } = useSidebar()
 const projectStore = useProjectStore()
 const workspaceStore = useWorkspaceStore()
 const authStore = useAuthStore()
+const { navigateToProject } = useProjectNavigation()
 
 const projects = computed(() => projectStore.projects)
 const activeWorkspace = computed(() => workspaceStore.activeWorkspace)
 
-const navigateToProject = (projectId: string) => {
-  if (activeWorkspace.value) {
-    router.push(`/workspace/${activeWorkspace.value.id}/project/${projectId}/tasks`)
-  }
+const handleNavigateToProject = (projectId: string) => {
+  navigateToProject(router, projectId)
 }
 
 const loadProjects = async () => {
@@ -83,7 +83,7 @@ watch(
     <SidebarMenu>
       <SidebarMenuItem v-for="project in projects.slice(0, 5)" :key="project.id">
         <SidebarMenuButton as-child>
-          <a href="#" @click.prevent="navigateToProject(project.id)">
+          <a href="#" @click.prevent="handleNavigateToProject(project.id)">
             <FolderKanban />
             <span>{{ project.name }}</span>
           </a>
@@ -100,7 +100,7 @@ watch(
             :side="isMobile ? 'bottom' : 'right'"
             :align="isMobile ? 'end' : 'start'"
           >
-            <DropdownMenuItem @click="navigateToProject(project.id)">
+            <DropdownMenuItem @click="handleNavigateToProject(project.id)">
               <FolderKanban class="text-muted-foreground" />
               <span>View Project</span>
             </DropdownMenuItem>
